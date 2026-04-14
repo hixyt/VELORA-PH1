@@ -50,8 +50,6 @@ Telegram Bot (city input)
 
 ## 📸 Screenshots
 
-> _Screenshots will be added after workflow deployment._
-
 <!-- Add screenshots here -->
 [Telegram Input](screenshots/telegram-input.png)
 [Google Sheet Output](screenshots/sheet-output.png)
