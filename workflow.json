@@ -1,0 +1,26 @@
+{
+  "name": "VELORA Phase 1 — Lead Intelligence",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "instanceId": "",
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "lead-generation"
+    },
+    {
+      "name": "telegram"
+    },
+    {
+      "name": "google-maps"
+    }
+  ],
+  "_comment": "This is a placeholder. Replace with your actual n8n workflow export via Settings → Export Workflow in the n8n editor."
+}
