@@ -1,0 +1,342 @@
+{
+  "name": "Velora-PH1",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "394229a4-36dc-4acd-8d0e-2b7f58e7b9cd",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        -224
+      ],
+      "webhookId": "277d56c3-e261-4481-b165-7be5678645b2",
+      "credentials": {
+        "telegramApi": {
+          "id": "z7SgGPAYlQLpHB4K",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $input.first().json?.message?.text?.toLowerCase().trim() || '';\n\nconst cityMap = {\n  'nagpur': 'cafes+restaurants+salons+Nagpur&ll=@21.1458,79.0882,14z',\n  'pune': 'cafes+restaurants+salons+Pune&ll=@18.5204,73.8567,14z',\n  'mumbai': 'cafes+restaurants+salons+Mumbai&ll=@19.0760,72.8777,14z',\n  'delhi': 'cafes+restaurants+salons+Delhi&ll=@28.6139,77.2090,14z',\n  'bangalore': 'cafes+restaurants+salons+Bangalore&ll=@12.9716,77.5946,14z',\n  'hyderabad': 'cafes+restaurants+salons+Hyderabad&ll=@17.3850,78.4867,14z',\n  'start': 'cafes+restaurants+salons+Nagpur&ll=@21.1458,79.0882,14z'\n};\n\nconst validCommands = Object.keys(cityMap);\nconst matched = validCommands.find(cmd => msg.includes(cmd));\n\nif (!matched) {\n  return [{\n    json: {\n      triggered: false,\n      message: '❌ Send a city name:\\nnagpur, pune, mumbai, delhi, bangalore, hyderabad'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    triggered: true,\n    city: matched.charAt(0).toUpperCase() + matched.slice(1),\n    searchQuery: cityMap[matched],\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "0ff63473-0999-4b29-a600-974ebc2e9218",
+      "name": "Check Start Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://serpapi.com/search.json?engine=google_maps&q={{ $json.searchQuery }}&api_key=f3e9d13be9addb244e658cf97d8fab06914fd35b9aa6a4452a68c3c2394e3d5c &start=0",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "cafes restaurants salons in Nagpur"
+            },
+            {
+              "name": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "local-business-data.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "f3e9d13be9addb244e658cf97d8fab06914fd35b9aa6a4452a68c3c2394e3d5c"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "74f38f7f-145d-4e0e-9338-5a459c5df1f2",
+      "name": "Scrape Local Businesses",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        336,
+        -368
+      ],
+      "notes": "FREE alternative: Replace with SerpAPI Google Maps free tier (100 searches/month) or Apify Google Maps Scraper (free tier). See PART 7 notes."
+    },
+    {
+      "parameters": {
+        "jsCode": "const businesses = $input.first().json?.local_results || [];\nconst dayOffset = new Date().getDate() % 5;\nconst rotated = [...businesses.slice(dayOffset), ...businesses.slice(0, dayOffset)];\n\nif (rotated.length === 0) {\n  return [{ json: { error: 'No businesses found', count: 0 } }];\n}\n\nreturn rotated.slice(0, 5).map(b => {\n  const noWebsite = !b.website || b.website.trim() === '';\n  const lowRating = b.rating > 0 && b.rating < 4.0;\n  const hasPhone = !!(b.phone);\n  const reviewCount = b.reviews || 0;\n\n  let score = 0;\n  if (noWebsite) score += 4;\n  if (lowRating) score += 3;\n  if (!hasPhone) score += 2;\n  if (reviewCount < 50) score += 1;\n\n  return {\n    json: {\n      title: b.title || 'Unknown',\n      address: b.address || '',\n      rating: b.rating || 'No rating',\n      phone: b.phone || 'N/A',\n      website: b.website || 'No Website',\n      category: b.type || 'Business',\n      place_id: b.place_id || '',\n      maps_link: b.place_id ? 'https://maps.google.com/?cid=' + b.place_id : 'N/A',\n      lead_score: score + '/10',\n      priority: score >= 6 ? '🔥 Hot' : score >= 3 ? '⭐ Warm' : '❄️ Cold'\n    }\n  };\n});"
+      },
+      "id": "4006f1cf-3763-4f0f-adfe-d8421fe13846",
+      "name": "Filter & Limit to 5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1ltTnWvyQ4q7MSdeleoPNCW9Y_bw2lCl7IhQscLESdjI",
+          "mode": "list",
+          "cachedResultName": "Nagpur Lead Gen",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ltTnWvyQ4q7MSdeleoPNCW9Y_bw2lCl7IhQscLESdjI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ltTnWvyQ4q7MSdeleoPNCW9Y_bw2lCl7IhQscLESdjI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Business Name": "={{ $json.title }}",
+            "Address": "={{ $json.address }}",
+            "Rating": "={{ String($json.rating) }}",
+            "Website": "={{ $json.website }}",
+            "Phone": "={{ \"'\" + $json.phone }}",
+            "Google Maps Link": "={{ $json.maps_link }}",
+            "Status ": "New Lead",
+            "Date Scraped": "={{ new Date().toISOString().split('T')[0] }}",
+            "Lead Score": "={{ $json.lead_score }}",
+            "Priority": "={{ $json.priority }}"
+          },
+          "matchingColumns": [
+            "Business Name"
+          ],
+          "schema": [
+            {
+              "id": "Business Name",
+              "displayName": "Business Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Address",
+              "displayName": "Address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website",
+              "displayName": "Website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Google Maps Link",
+              "displayName": "Google Maps Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status ",
+              "displayName": "Status ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date Scraped",
+              "displayName": "Date Scraped",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5004a78d-420e-4d90-8704-e357281382a6",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        384,
+        -176
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rSRz6KqkXkEGEHXm",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6085092498",
+        "text": "=📊 *Velora — Daily Report*\n📅 {{ new Date().toLocaleDateString('en-IN') }}\n🏙️ City: {{ $('Check Start Command').first().json.city }}\n\n✅ 5 businesses scraped & saved to Sheet!\n🔥 Hot leads marked in Priority column\n\nSend any city name for new leads:\nnagpur | pune | mumbai | delhi | bangalore | hyderabad",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "314e0178-698d-4191-8ee4-8a9f9b0d1cbe",
+      "name": "Telegram Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        16
+      ],
+      "webhookId": "be6a77b3-87dd-4b97-b1f7-3d67ffcc3447",
+      "credentials": {
+        "telegramApi": {
+          "id": "z7SgGPAYlQLpHB4K",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Start Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Start Command": {
+      "main": [
+        [
+          {
+            "node": "Scrape Local Businesses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Local Businesses": {
+      "main": [
+        [
+          {
+            "node": "Filter & Limit to 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Telegram Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Limit to 5": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9b26598c-5edc-45b2-8e5c-027cfc8f793a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f67f77edfc6cf085cd3a5b39bb34515e9f3cf4a34158f9474691317c7e7e1c3e"
+  },
+  "id": "pAVmEiAWBw9D8rbc",
+  "tags": []
+}
