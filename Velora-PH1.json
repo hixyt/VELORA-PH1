@@ -39,7 +39,7 @@
     },
     {
       "parameters": {
-        "url": "=https://serpapi.com/search.json?engine=google_maps&q={{ $json.searchQuery }}&api_key=f3e9d13be9addb244e658cf97d8fab06914fd35b9aa6a4452a68c3c2394e3d5c &start=0",
+        "url": "=https://serpapi.com/search.json?engine=google_maps&q={{ $json.searchQuery }}&api_key=YOUR_SERPAPI_KEY &start=0",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -62,7 +62,7 @@
             },
             {
               "name": "x-rapidapi-key",
-              "value": "f3e9d13be9addb244e658cf97d8fab06914fd35b9aa6a4452a68c3c2394e3d5c"
+              "value": "YOUR_API_KEY"
             }
           ]
         },
